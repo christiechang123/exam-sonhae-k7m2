@@ -837,7 +837,29 @@ button.choice:active { transform: scale(.995); }
      가운뎃점이나 괄호까지 무시하기 시작하면 서로 다른 답이 같아진다. */
   function tidy(s) { return String(s == null ? '' : s).trim().replace(/\s+/g, ' '); }
 
+  /* '모두 고르시오' 형 정답은 기호의 집합이다. 순서도 구분자도 따지지 않는다 —
+     실제 시험이 그렇고, 'ㄹ, ㅁ' 만 정답으로 두면 'ㅁ, ㄹ' 이 오답이 된다. */
+  var SET_TOKENS = '㉠㉡㉢㉣㉤㉥①②③④⑤⑥⑦⑧⑨⑩ㄱㄴㄷㄹㅁㅂ';
+  function tokenSet(s) {
+    var out = {}, str = String(s == null ? '' : s);
+    for (var i = 0; i < str.length; i++) {
+      if (SET_TOKENS.indexOf(str.charAt(i)) >= 0) out[str.charAt(i)] = 1;
+    }
+    return out;
+  }
+  function sameSet(a, b) {
+    var k;
+    for (k in a) { if (!b[k]) return false; }
+    for (k in b) { if (!a[k]) return false; }
+    return true;
+  }
+
   function blankOk(blank, typed) {
+    if (blank.set && blank.set.length) {
+      var want = {};
+      for (var s = 0; s < blank.set.length; s++) want[blank.set[s]] = 1;
+      return sameSet(tokenSet(typed), want);
+    }
     var t = tidy(typed);
     if (!t) return false;
     if (t === tidy(blank.answer)) return true;
@@ -1446,7 +1468,8 @@ button.choice:active { transform: scale(.995); }
             (b.label ? '<span class="blabel">' + h(b.label) + '</span>' : '') +
             '<input type="text" data-blank="' + i + '" autocomplete="off" ' +
             'autocapitalize="off" spellcheck="false" ' +
-            'placeholder="' + ((q.blanks.length > 1) ? '빈칸 ' + (i + 1) : '답을 입력하세요') + '">' +
+            'placeholder="' + (b.set ? '해당 기호를 모두 입력 (순서 무관)'
+              : (q.blanks.length > 1) ? '빈칸 ' + (i + 1) : '답을 입력하세요') + '">' +
           '</label>';
         }).join('') + '</div>' +
         '<p class="micro" style="margin-top:1.2rem">정확히 일치해야 정답입니다. ' +
